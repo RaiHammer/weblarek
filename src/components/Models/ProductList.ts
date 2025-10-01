@@ -1,29 +1,28 @@
-import { IProduct } from '../../types/index';
+import { IProduct } from "../../types/index";
 
 export class ProductList {
-    private products: IProduct[] = [];
-    private selectedProduct: IProduct | null = null;
+  private products: IProduct[] = [];
+  private selectedProduct: IProduct | null = null;
 
-    constructor() {
-    }
+  constructor() {}
 
-    setProducts(products: IProduct[]): void {
-        this.products = products;
-    }
+  setProducts(products: IProduct[]): void {
+    this.products = products;
+  }
 
-    getProducts(): IProduct[] {
-        return this.products;
-    }
+  getProducts(): IProduct[] {
+    return this.products;
+  }
 
-    getProductById(id: string): IProduct | undefined {
-        return this.products.find(product => product.id === id);
-    }
+  getProductById(id: string): IProduct | undefined {
+    return this.products.find((product) => product.id === id);
+  }
 
-    setSelectedProduct(product: IProduct): void {
-        this.selectedProduct = product;
-    }
+  setSelectedProduct(product: IProduct): void {
+    this.selectedProduct = product;
+  }
 
-    getSelectedProduct(): IProduct | null {
-        return this.selectedProduct;
-    }
+  getSelectedProduct(): IProduct | null {
+    return this.selectedProduct;
+  }
 }
