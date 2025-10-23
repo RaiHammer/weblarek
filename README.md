@@ -20,7 +20,7 @@
 
 ```
 npm install
-npm run start
+npm run dev
 ```
 
 или
@@ -248,3 +248,324 @@ type ValidationResult = {
 `getProductList(): Promise<IProduct[]>` - выполняет GET запрос на эндпоинт /product/ и возвращает промис с массивом товаров
 
 `submitOrder(orderData: IOrder): Promise<IOrderResult>` - выполняет POST запрос на эндпоинт /order/ и передает данные заказа, возвращает промис с результатом оформления заказа
+
+
+### Слой представления
+
+#### Класс Header
+Назначение и зона ответственности: Наследуется от Component<HeaderData>. Отвечает за отображение шапки приложения, включая счетчик товаров в корзине и кнопку для взаимодействия с корзиной.
+
+Конструктор:
+`constructor(container: HTMLElement)` - принимает DOM-элемент, который будет контейнером шапки.
+
+Поля класса:
+`basketButton: HTMLButtonElement` - кнопка для открытия корзины
+`counterElement: HTMLElement` - элемент для отображения количества товаров в корзине
+
+События:
+`header:open-cart` - генерируется при клике на кнопку корзины
+
+Методы класса:
+`render(data: HeaderData): HTMLElement` - отображает шапку с переданными данными
+`setCounter(value: number): void` - обновляет значение счетчика товаров в корзине
+
+Данные:
+```
+interface HeaderData {
+  counter: number;
+}
+```
+
+
+#### Класс Gallery
+Назначение и зона ответственности: Наследуется от Component<GalleryData>. Отвечает за отображение галереи товаров - контейнера для карточек товаров в каталоге.
+
+Конструктор:
+`constructor(container: HTMLElement)` - принимает DOM-элемент, который будет контейнером галереи.
+
+Поля класса:
+
+`galleryElement: HTMLElement` - основной элемент галереи, содержащий карточки товаров
+
+Методы класса:
+`render(data: GalleryData): HTMLElement` - отображает галерею с переданными данными
+`setCatalog(items: HTMLElement[]): void` - обновляет содержимое галереи, отображая переданный массив карточек товаров
+
+Данные:
+```
+interface GalleryData {
+  catalog: HTMLElement[];
+}
+```
+
+
+#### Класс Modal
+Назначение и зона ответственности: Наследуется от Component<ModalData>. Является универсальным контейнером для отображения различного контента в модальном окне. Может использоваться для показа деталей товара, корзины, формы оформления заказа и других вспомогательных окон. От этого класса НЕ наследуются другие модальные окна. Все специализированные окна (подтверждение, формы и т.д.) - независимые компоненты,которые могут отображаться внутри этого универсального модального контейнера.
+
+Конструктор:
+`constructor(container: HTMLElement)` - принимает DOM-элемент, который будет контейнером модального окна.
+
+Поля класса:
+`modalElement: HTMLElement` - основной элемент модального окна, содержащий переданный контент
+`modalClose: HTMLButtonElement` - кнопка закрытия модального окна
+`overlay: HTMLElement` - затемненный фон модального окна
+
+События:
+`modal:open` - генерируется при открытии модального окна
+`modal:close` - генерируется при закрытии модального окна
+
+Методы класса:
+`render(data: ModalData): HTMLElement` - инициализирует модальное окно с базовой разметкой
+`setContent(content: HTMLElement): void` - устанавливает переданный контент в модальное окно
+`open(): void` - открывает модальное окно
+`close(): void` - закрывает модальное окно
+`handleClose(): void` - обработчик закрытия модального окна (по кнопке или клику на оверлей)
+
+Данные:
+```
+interface ModalData {
+  content: HTMLElement;
+}
+```
+
+
+##### Класс ModalSuccess
+Назначение и зона ответственности: Наследуется от Component<ModalSuccessData>. Отображает содержимое для окна подтверждения заказа. Может быть встроен в универсальное модальное окно Modal.
+
+Конструктор:
+`constructor(container: HTMLElement)` - принимает DOM-элемент контейнера
+
+Поля класса:
+`successElement: HTMLElement` - элемент с контентом подтверждения
+`closeButton: HTMLButtonElement` - кнопка закрытия
+`descriptionElement: HTMLElement` - элемент для отображения суммы
+
+События:
+`success:close` - генерируется при закрытии
+
+Методы класса:
+`render(data: ModalSuccessData): HTMLElement` - отображает контент подтверждения
+`setTotalAmount(amount: number): void` - обновляет сумму
+
+Данные:
+```
+interface ModalSuccessData {
+  totalAmount: number;
+}
+```
+
+
+#### Класс Product
+Назначение и зона ответственности: Абстрактный класс, наследуется от Component<IProduct>. 
+Содержит общую логику для всех представлений товаров
+
+Конструктор:
+`constructor(container: HTMLElement, templateId: string)` - принимает контейнер и ID шаблона
+
+Поля класса:
+`productElement: HTMLElement` - основной элемент товара
+
+Методы класса:
+`setTitle(title: string): void` - устанавливает название
+`setPrice(price: number): void` - устанавливает цену  
+`setImage(src: string, alt?: string): void` - устанавливает изображение
+
+
+
+##### Класс ProductCard (карточка в каталоге)
+Назначение и зона ответственности: Наследуется от Product. Отображает товар в виде карточки в галерее каталога.
+
+Конструктор:
+`constructor(container: HTMLElement)` - использует шаблон card-catalog
+
+События:
+`card:select` - генерируется при клике на карточку товара
+
+Методы класса:
+`render(data: IProduct): HTMLElement` - рендерит карточку товара для каталога
+
+
+##### Класс ProductPreview (детальный просмотр)
+Назначение и зона ответственности: Наследуется от Product. Отображает детальную информацию о товаре в модальном окне.
+
+Конструктор:
+`constructor(container: HTMLElement)` - использует шаблон card-preview
+
+События:
+`preview:add-to-cart` - генерируется при клике на кнопку "В корзину"
+
+Методы класса:
+`render(data: IProduct): HTMLElement` - рендерит детальное представление товара
+`setDescription(description: string): void` - устанавливает описание товара
+
+
+##### Класс BasketItem (товар в корзине)
+Назначение и зона ответственности: Наследуется от Product. Отображает товар в списке корзины покупок.
+
+Конструктор:
+`constructor(container: HTMLElement)` - использует шаблон card-basket
+
+События:
+`basket:remove` - генерируется при клике на кнопку удаления товара
+
+Методы класса:
+`render(data: IProduct): HTMLElement` - рендерит товар для корзины с порядковым номером
+`setIndex(index: number): void`- устанавливает порядковый номер товара в корзине
+
+
+#### Класс Basket
+Назначение и зона ответственности: Наследуется от Component<BasketData>. Отображает содержимое корзины покупок.
+
+Конструктор:
+`constructor(container: HTMLElement)` - использует шаблон basket
+
+Поля класса:
+`basketElement: HTMLElement` - основной элемент корзины
+`itemsList: HTMLElement` - список товаров в корзине
+`totalPriceElement: HTMLElement` - элемент для отображения общей стоимости
+`checkoutButton: HTMLButtonElement` - кнопка оформления заказа
+
+События:
+`basket:checkout` - генерируется при клике на кнопку оформления заказа
+
+Методы класса:
+`render(data: BasketData): HTMLElement` - отображает корзину с переданными данными
+`setItems(items: HTMLElement[]): void` - устанавливает список товаров в корзине
+`setTotalPrice(price: number): void` - обновляет отображение общей стоимости
+
+Данные:
+```
+interface BasketData {
+  items: HTMLElement[];
+  totalPrice: number;
+}
+```
+
+#### Абстрактный класс Form
+Назначение и зона ответственности: Наследуется от Component<FormData>. Базовый класс для всех форм в приложении.
+
+Конструктор:
+`constructor(container: HTMLElement, templateId: string)` - принимает контейнер и ID шаблона формы
+
+Поля класса:
+`formElement: HTMLFormElement` - элемент формы
+`submitButton: HTMLButtonElement` - кнопка отправки формы
+`errorsElement: HTMLElement` - элемент для отображения ошибок
+
+Методы класса:
+`render(data: FormData): HTMLElement` - отображает форму
+`validate(): ValidationResult` - выполняет валидацию формы
+`getData(): object` - возвращает данные формы
+`setErrors(errors: string[]): void` - отображает ошибки валидации
+
+
+##### Класс OrderForm (форма заказа)
+Назначение и зона ответственности: Наследуется от Form. Отображает форму выбора способа оплаты и адреса доставки.
+
+Конструктор:
+`constructor(container: HTMLElement)` - использует шаблон order
+
+Поля класса:
+`paymentButtons: NodeListOf<HTMLButtonElement>` - кнопки выбора способа оплаты
+`addressInput: HTMLInputElement` - поле ввода адреса
+
+События:
+`order:submit` - генерируется при отправке формы заказа
+`payment:change` - генерируется при изменении способа оплаты
+
+Методы класса:
+`render(data: FormData): HTMLElement` - отображает форму заказа
+`setPaymentMethod(method: TPayment): void` - устанавливает способ оплаты
+`validate(): ValidationResult` - выполняет валидацию формы заказа
+
+
+##### Класс ContactsForm (форма контактов)
+Назначение и зона ответственности: Наследуется от Form. Отображает форму ввода контактных данных.
+
+Конструктор:
+`constructor(container: HTMLElement)` - использует шаблон contacts
+
+Поля класса:
+`emailInput: HTMLInputElement` - поле ввода email
+`phoneInput: HTMLInputElement` - поле ввода телефона
+
+События:
+`contacts:submit`- генерируется при отправке формы контактов
+
+Методы класса:
+`render(data: FormData): HTMLElement` - отображает форму контактов
+`validate(): ValidationResult` - выполняет валидацию формы контактов
+
+
+## События приложения
+
+### ProductCard
+`card:select` - выбор товара для просмотра (передает { id: string })
+`card:add-to-cart` - добавление товара в корзину (передает { id: string })
+
+### ProductPreview  
+`preview:add-to-cart` - добавление товара в корзину из preview (передает { id: string })
+
+### BasketItem
+`basket:remove` - удаление товара из корзины (передает { id: string })
+
+### Header
+`header:open-cart` - открытие корзины
+
+### Basket
+`basket:checkout` - оформление заказа
+
+### OrderForm
+`order:submit` - отправка формы заказа
+`payment:change` - изменение способа оплаты (передает { payment: TPayment })
+
+### ContactsForm
+`contacts:submit` - отправка формы контактов
+
+### Modal
+`modal:open` - открытие модального окна  
+`modal:close` - закрытие модального окна
+
+### ModalSuccess
+`success:close` - закрытие окна успешного заказа
+
+
+
+## События моделей (Model Events)
+
+### ProductList
+`productlist:changed` - изменение списка товаров. Данные: IProduct[]
+`productlist:selected` - выбор товара для детального просмотра. Данные: IProduct
+
+### Cart
+`cart:changed` - изменение содержимого корзины. Данные: IProduct[]
+`cart:item-added` - добавление товара в корзину. Данные: IProduct
+`cart:item-removed` - удаление товара из корзины. Данные: IProduct
+`cart:cleared` - очистка корзины. Данные: нет
+
+### Buyer
+`buyer:changed` - изменение данных покупателя. Данные: Partial<IBuyer>
+`buyer:validated` - результат валидации данных. Данные: { isValid: boolean; errors: ValidationResult }
+`buyer:cleared` - очистка данных покупателя. Данные: нет
+
+## Презентер
+
+### Архитектурный подход
+Для проекта "Веб-Ларёк" выбран подход единого презентера в main.ts. Это решение обосновано следующими факторами:
+1. Простота приложения - одностраничное приложение с четким flow
+2. Низкая сложность - ограниченное количество экранов и состояний
+3. Быстрая разработка - отсутствие необходимости в сложной инжекции зависимостей
+4. Прозрачность потока данных - вся логика сосредоточена в одном файле
+
+### Принципы реализации:
+Презентер только обрабатывает события - не генерирует новые
+Разделение ответственности - презентер координирует работу моделей и представлений
+Реактивное обновление - представления обновляются только при изменении данных в моделях
+Отсутствие прямой связи - модели и представления не знают о существовании друг друга
+
+### Основные обязанности презентера:
+1. Инициализация приложения
+2. Обработка событий от представлений (действия пользователя)
+3. Обработка событий от моделей (изменение данных)
+4. Координация обновления представлений
+5. Управление модальными окнами

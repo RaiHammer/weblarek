@@ -1,134 +1,290 @@
 import "./scss/styles.scss";
 
+// Импорты моделей
 import { ProductList } from "./components/Models/ProductList";
 import { Cart } from "./components/Models/Cart";
 import { Buyer } from "./components/Models/Buyer";
+
+// Импорты API
 import { ShopApi } from "./components/Api/ShopApi";
 import { Api } from "./components/base/Api";
-import { apiProducts } from "./utils/data";
+
+// Импорты представлений
+import { Gallery } from "./components/views/Gallery";
+import { Header } from "./components/views/Header";
+import { Modal } from "./components/views/Modal/Modal";
+import { Basket } from "./components/views/Basket";
+import { OrderForm } from "./components/views/Form/OrderForm";
+import { ContactsForm } from "./components/views/Form/ContactsForm";
+import { ModalSuccess } from "./components/views/Modal/ModalSuccess";
+import { ProductCard } from "./components/views/Product/ProductCard";
+import { ProductPreview } from "./components/views/Product/ProductPreview";
+import { BasketItem } from "./components/views/Product/BasketItem";
+
+// Импорты базовых классов и типов
+import { EventEmitter } from "./components/base/Events";
 import { API_URL } from "./utils/constants";
+import { IProduct, IOrder, TPayment, ValidationResult } from "./types";
+import { cloneTemplate } from "./utils/utils";
 
+// Инициализация брокера событий ПЕРВОЙ
+const events = new EventEmitter();
+
+// Инициализация API
 const api = new Api(API_URL);
-
 const shopApi = new ShopApi(api);
 
+// Инициализация моделей
 const productsModel = new ProductList();
 const cartModel = new Cart();
 const buyerModel = new Buyer();
 
-console.log("=== ТЕСТИРОВАНИЕ МОДЕЛЕЙ ДАННЫХ ===");
+// Инициализация представлений (создаем из шаблонов)
+const gallery = new Gallery(document.querySelector('.gallery') as HTMLElement);
+const header = new Header(document.querySelector('.header') as HTMLElement, events);
+const modal = new Modal(document.querySelector('#modal-container') as HTMLElement, events);
 
-console.log("=== ТЕСТИРОВАНИЕ PRODUCTLIST ===");
+// Создаем остальные компоненты из шаблонов
+const basketContainer = cloneTemplate<HTMLElement>('#basket');
+const basket = new Basket(basketContainer, events);
 
-productsModel.setProducts(apiProducts.items);
+const orderFormContainer = cloneTemplate<HTMLElement>('#order');
+const orderForm = new OrderForm(orderFormContainer, events);
 
-console.log("Массив товаров из каталога:", productsModel.getProducts());
-console.log(
-  "Количество товаров в каталоге:",
-  productsModel.getProducts().length
-);
+const contactsFormContainer = cloneTemplate<HTMLElement>('#contacts');
+const contactsForm = new ContactsForm(contactsFormContainer, events);
 
-const firstProduct = productsModel.getProducts()[0];
-if (firstProduct) {
-  const foundProduct = productsModel.getProductById(firstProduct.id);
-  console.log("Найденный товар по ID:", foundProduct);
+const modalSuccessContainer = cloneTemplate<HTMLElement>('#success');
+const modalSuccess = new ModalSuccess(modalSuccessContainer, events);
 
-  productsModel.setSelectedProduct(firstProduct);
-  console.log("Выбранный товар:", productsModel.getSelectedProduct());
-}
-
-console.log("\n=== ТЕСТИРОВАНИЕ CART ===");
-
-if (productsModel.getProducts().length >= 2) {
-  const product1 = productsModel.getProducts()[0];
-  const product2 = productsModel.getProducts()[1];
-
-  cartModel.addItem(product1);
-  cartModel.addItem(product2);
-
-  console.log("Товары в корзине:", cartModel.getItems());
-  console.log("Количество товаров в корзине:", cartModel.getItemsCount());
-  console.log("Общая стоимость корзины:", cartModel.getTotalPrice());
-  console.log(
-    "Проверка наличия товара 1:",
-    cartModel.containsItem(product1.id)
-  );
-
-  cartModel.removeItem(product1);
-  console.log("Товары в корзине после удаления:", cartModel.getItems());
-  console.log("Количество товаров после удаления:", cartModel.getItemsCount());
-
-  cartModel.clearCart();
-  console.log("Корзина после очистки:", cartModel.getItems());
-}
-
-console.log("\n=== ТЕСТИРОВАНИЕ BUYER ===");
-
-buyerModel.setData({
-  payment: "online",
-  email: "test@example.com",
-  phone: "+79991234567",
-  address: "Москва, ул. Примерная, д. 1",
-});
-
-console.log("Данные покупателя:", buyerModel.getData());
-
-console.log("Валидация с полными данными:", buyerModel.validate());
-
-buyerModel.setData({ email: "", phone: "" });
-console.log("Валидация с неполными данными:", buyerModel.validate());
-
-buyerModel.clearData();
-console.log("Данные после очистки:", buyerModel.getData());
-
-console.log("\n=== ТЕСТИРОВАНИЕ МОДЕЛЕЙ ДАННЫХ ЗАВЕРШЕНО ===");
-
-console.log("\n=== ТЕСТИРОВАНИЕ РАБОТЫ С СЕРВЕРОМ ===");
-
-async function testServerCommunication() {
-  try {
-    console.log("Получаем каталог товаров с сервера...");
-
-    const products = await shopApi.getProductList();
-    console.log("Полученные товары с сервера:", products);
-
-    productsModel.setProducts(products);
-
-    const savedProducts = productsModel.getProducts();
-    console.log("Товары в модели после сохранения:", savedProducts);
-    console.log("Количество товаров в каталоге:", savedProducts.length);
-
-    if (savedProducts.length > 0) {
-      const firstProduct = savedProducts[0];
-      const foundProduct = productsModel.getProductById(firstProduct.id);
-      console.log("Найденный товар по ID:", foundProduct);
+// Основная логика презентера
+class AppPresenter {
+    constructor() {
+        this.initEventListeners();
+        this.loadProducts();
     }
 
-    console.log("Работа с сервером успешно протестирована!");
-  } catch (error) {
-    console.error("Ошибка при работе с сервером:", error);
-  }
+    private initEventListeners(): void {
+        // События от моделей данных
+        productsModel.on('productlist:changed', this.handleProductsChange.bind(this));
+        productsModel.on('productlist:selected', this.handleProductSelected.bind(this));
+        
+        cartModel.on('cart:changed', this.handleCartChange.bind(this));
+        cartModel.on('cart:total-changed', this.handleCartTotalChange.bind(this));
+        cartModel.on('cart:count-changed', this.handleCartCountChange.bind(this));
+        
+        buyerModel.on('buyer:validated', this.handleBuyerValidation.bind(this));
+
+        // События от представлений
+        events.on('card:select', this.handleCardSelect.bind(this));
+        events.on('card:add-to-cart', this.handleCardAddToCart.bind(this));
+        events.on('preview:add-to-cart', this.handlePreviewAddToCart.bind(this));
+        events.on('basket:remove', this.handleBasketRemove.bind(this));
+        events.on('header:open-cart', this.handleHeaderOpenCart.bind(this));
+        events.on('basket:checkout', this.handleBasketCheckout.bind(this));
+        events.on('order:submit', this.handleOrderSubmit.bind(this));
+        events.on('contacts:submit', this.handleContactsSubmit.bind(this));
+        events.on('payment:change', this.handlePaymentChange.bind(this));
+        events.on('modal:close', this.handleModalClose.bind(this));
+        events.on('success:close', this.handleSuccessClose.bind(this));
+    }
+
+    private async loadProducts(): Promise<void> {
+        try {
+            const products = await shopApi.getProductList();
+            productsModel.setProducts(products);
+        } catch (error) {
+            console.error('Ошибка загрузки товаров:', error);
+        }
+    }
+
+    // Обработчики событий моделей
+    private handleProductsChange(data: { items: IProduct[] }): void {
+        const productCards = data.items.map(product => {
+            const cardContainer = cloneTemplate<HTMLElement>('#card-catalog');
+            const card = new ProductCard(cardContainer, events);
+            const inCart = cartModel.containsItem(product.id);
+            
+            return card.render({
+                ...product,
+                buttonText: this.getButtonText(product.price, inCart),
+                buttonDisabled: product.price === null || inCart
+            });
+        });
+        
+        gallery.render({ items: productCards });
+    }
+
+    private handleProductSelected(data: { product: IProduct }): void {
+        const previewContainer = cloneTemplate<HTMLElement>('#card-preview');
+        const preview = new ProductPreview(previewContainer, events);
+        const inCart = cartModel.containsItem(data.product.id);
+        
+        const previewContent = preview.render({
+            ...data.product,
+            buttonText: this.getButtonText(data.product.price, inCart),
+            buttonDisabled: data.product.price === null || inCart
+        });
+        
+        modal.render({ content: previewContent });
+        modal.open();
+    }
+
+    private handleCartChange(data: { items: IProduct[] }): void {
+        const basketItems = data.items.map((item, index) => {
+            const itemContainer = cloneTemplate<HTMLElement>('#card-basket');
+            const basketItem = new BasketItem(itemContainer, events);
+            return basketItem.render({ ...item, index: index + 1 });
+        });
+        
+        const canCheckout = cartModel.canCheckout();
+        basket.render({
+            items: basketItems,
+            total: cartModel.getTotalPrice(),
+            buttonText: canCheckout ? 'Оформить' : 'Корзина пуста',
+            buttonDisabled: !canCheckout
+        });
+    }
+
+    private handleCartCountChange(data: { count: number }): void {
+        header.render({ counter: data.count });
+    }
+
+    private handleCartTotalChange(data: { total: number }): void {
+        // Обновление отображения общей суммы при необходимости
+    }
+
+    private handleBuyerValidation(data: { isValid: boolean; errors: ValidationResult }): void {
+        // Обновление состояния форм при валидации
+        const buyerData = buyerModel.getData();
+        
+        if (data.errors.payment || data.errors.address) {
+            orderForm.render({ 
+                payment: buyerData.payment,
+                address: buyerData.address,
+                errors: this.getErrorMessages(data.errors)
+            });
+        }
+        
+        if (data.errors.email || data.errors.phone) {
+            contactsForm.render({
+                email: buyerData.email,
+                phone: buyerData.phone,
+                errors: this.getErrorMessages(data.errors)
+            });
+        }
+    }
+
+    // Обработчики событий представлений
+    private handleCardSelect(data: { id: string }): void {
+        const product = productsModel.getProductById(data.id);
+        if (product) {
+            productsModel.setSelectedProduct(product);
+        }
+    }
+
+    private handleCardAddToCart(data: { id: string }): void {
+        const product = productsModel.getProductById(data.id);
+        if (product && product.price !== null) {
+            cartModel.addItem(product);
+        }
+    }
+
+    private handlePreviewAddToCart(data: { id: string }): void {
+        this.handleCardAddToCart(data);
+        modal.close();
+    }
+
+    private handleBasketRemove(data: { id: string }): void {
+        const product = productsModel.getProductById(data.id);
+        if (product) {
+            cartModel.removeItem(product);
+        }
+    }
+
+    private handleHeaderOpenCart(): void {
+        modal.render({ content: basket.element });
+        modal.open();
+    }
+
+    private handleBasketCheckout(): void {
+        modal.render({ content: orderForm.element });
+        modal.open();
+    }
+
+    private handleOrderSubmit(): void {
+        const data = buyerModel.getData();
+        const validation = buyerModel.validate();
+        
+        if (!validation.payment && !validation.address) {
+            modal.render({ content: contactsForm.element });
+        } else {
+            orderForm.render({ 
+                payment: data.payment,
+                address: data.address,
+                errors: this.getErrorMessages(validation)
+            });
+        }
+    }
+
+    private handleContactsSubmit(): void {
+        const validation = buyerModel.validate();
+        
+        if (buyerModel.isReady() && cartModel.canCheckout()) {
+            this.submitOrder();
+        } else {
+            contactsForm.render({
+                email: buyerModel.getData().email,
+                phone: buyerModel.getData().phone,
+                errors: this.getErrorMessages(validation)
+            });
+        }
+    }
+
+    private handlePaymentChange(data: { payment: TPayment }): void {
+        buyerModel.setPayment(data.payment);
+    }
+
+    private handleModalClose(): void {
+        productsModel.clearSelectedProduct();
+    }
+
+    private handleSuccessClose(): void {
+        modal.close();
+        cartModel.clearCart();
+        buyerModel.clearData();
+    }
+
+    // Вспомогательные методы
+    private getButtonText(price: number | null, inCart: boolean): string {
+        if (price === null) return 'Недоступно';
+        if (inCart) return 'Уже в корзине';
+        return 'В корзину';
+    }
+
+    private getErrorMessages(validation: ValidationResult): string[] {
+        return Object.values(validation).filter(Boolean) as string[];
+    }
+
+    private async submitOrder(): Promise<void> {
+        try {
+            const orderData: IOrder = {
+                ...buyerModel.getData(),
+                total: cartModel.getTotalPrice(),
+                items: cartModel.getItemIds()
+            };
+
+            const result = await shopApi.submitOrder(orderData);
+            
+            modalSuccess.render({ total: result.total });
+            modal.render({ content: modalSuccess.element });
+            
+        } catch (error) {
+            console.error('Ошибка оформления заказа:', error);
+            // Показать ошибку пользователю
+        }
+    }
 }
 
-testServerCommunication();
-
-async function testOrderSubmission() {
-  try {
-    console.log("\n=== ТЕСТ ДАННЫХ ЗАКАЗА ===");
-
-    const testOrder = {
-      payment: "online" as const,
-      email: "test@example.com",
-      phone: "+79991234567",
-      address: "Москва, ул. Примерная, д. 1",
-      total: 1000,
-      items: ["item1", "item2"],
-    };
-
-    console.log("Тестовые данные заказа:", testOrder);
-  } catch (error) {
-    console.error("Ошибка при тестировании отправки заказа:", error);
-  }
-}
-
-testOrderSubmission();
+// Инициализация приложения
+new AppPresenter();
