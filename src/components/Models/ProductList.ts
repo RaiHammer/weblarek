@@ -11,7 +11,7 @@ export class ProductList extends EventEmitter {
 
     setProducts(products: IProduct[]): void {
         this.products = [...products];
-        this.emit('productlist:changed', this.getProducts());
+        this.emit('productlist:changed');
     }
 
     getProducts(): IProduct[] {
@@ -24,7 +24,7 @@ export class ProductList extends EventEmitter {
 
     setSelectedProduct(product: IProduct): void {
         this.selectedProduct = product;
-        this.emit('productlist:selected', product);
+        this.emit('productlist:selected');
     }
 
     getSelectedProduct(): IProduct | null {
@@ -33,14 +33,5 @@ export class ProductList extends EventEmitter {
 
     clearSelectedProduct(): void {
         this.selectedProduct = null;
-        this.emit('productlist:selected-cleared');
-    }
-
-    getAvailableProducts(): IProduct[] {
-        return this.products.filter(product => product.price !== null);
-    }
-
-    getProductsByCategory(category: string): IProduct[] {
-        return this.products.filter(product => product.category === category);
     }
 }

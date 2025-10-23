@@ -3,8 +3,9 @@ import { ensureElement } from '../../../utils/utils';
 import { IProduct } from '../../../types/index';
 import { categoryMap } from '../../../utils/constants';
 
+
+
 export abstract class Product extends Component<IProduct> {
-    protected productElement: HTMLElement;
     protected titleElement: HTMLElement;
     protected priceElement: HTMLElement;
     protected imageElement: HTMLImageElement;
@@ -13,23 +14,26 @@ export abstract class Product extends Component<IProduct> {
     constructor(container: HTMLElement, templateId: string) {
         super(container);
         
-        const template = ensureElement<HTMLTemplateElement>(`#${templateId}`);
-        this.productElement = template.content.querySelector('.card')?.cloneNode(true) as HTMLElement;
+        // Очищаем контейнер
+        this.container.innerHTML = '';
         
-        if (!this.productElement) {
-            throw new Error(`Основной элемент товара не найден в шаблоне ${templateId}`);
+        // Получаем шаблон
+        const template = ensureElement<HTMLTemplateElement>(`#${templateId}`);
+        const templateElement = template.content.firstElementChild?.cloneNode(true) as HTMLElement;
+        
+        if (!templateElement) {
+            throw new Error(`Template ${templateId} has no content`);
         }
 
-        // Находим элементы один раз в конструкторе
-        this.titleElement = ensureElement<HTMLElement>('.card__title', this.productElement);
-        this.priceElement = ensureElement<HTMLElement>('.card__price', this.productElement);
-        this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.productElement);
-        this.categoryElement = ensureElement<HTMLElement>('.card__category', this.productElement);
+        this.container.appendChild(templateElement);
 
-        this.container.appendChild(this.productElement);
+        // Находим элементы в добавленном шаблоне
+        this.titleElement = ensureElement<HTMLElement>('.card__title', this.container);
+        this.priceElement = ensureElement<HTMLElement>('.card__price', this.container);
+        this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
+        this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
     }
 
-    // Базовые методы только для отображения - без логики
     setTitle(title: string): void {
         this.titleElement.textContent = title;
     }
@@ -39,7 +43,7 @@ export abstract class Product extends Component<IProduct> {
     }
 
     setProductImage(src: string, alt?: string): void {
-        this.setImage(this.imageElement, src, alt); // Используем метод из Component
+        this.setImage(this.imageElement, src, alt);
     }
 
     setCategory(category: string): void {

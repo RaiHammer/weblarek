@@ -4,8 +4,6 @@ import { IEvents } from '../base/Events';
 interface BasketData {
     items: HTMLElement[];
     total: number;
-    buttonText?: string;
-    buttonDisabled?: boolean;
 }
 
 export class Basket extends Component<BasketData> {
@@ -15,23 +13,23 @@ export class Basket extends Component<BasketData> {
 
     constructor(container: HTMLElement, protected events: IEvents) {
         super(container);
-        
         this.itemsList = this.container.querySelector('.basket__list') as HTMLElement;
         this.totalElement = this.container.querySelector('.basket__price') as HTMLElement;
         this.buttonElement = this.container.querySelector('.basket__button') as HTMLButtonElement;
-        
-        if (!this.itemsList) {
-            throw new Error('Items list not found in basket');
-        }
-        
         this.attachEventListeners();
     }
 
     render(data: BasketData): HTMLElement {
         this.setItems(data.items);
         this.setTotal(data.total);
-        this.setButtonState(data.buttonText, data.buttonDisabled);
         return this.container;
+    }
+
+    setButtonState(text: string, disabled: boolean): void {
+        if (this.buttonElement) {
+            this.buttonElement.textContent = text;
+            this.buttonElement.disabled = disabled;
+        }
     }
 
     private setItems(items: HTMLElement[]): void {
@@ -42,13 +40,6 @@ export class Basket extends Component<BasketData> {
     private setTotal(total: number): void {
         if (this.totalElement) {
             this.totalElement.textContent = `${total} синапсов`;
-        }
-    }
-
-    private setButtonState(buttonText?: string, buttonDisabled?: boolean): void {
-        if (this.buttonElement) {
-            this.buttonElement.textContent = buttonText || 'Оформить';
-            this.buttonElement.disabled = buttonDisabled || false;
         }
     }
 

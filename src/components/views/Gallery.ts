@@ -9,7 +9,8 @@ export class Gallery extends Component<GalleryData> {
 
     constructor(container: HTMLElement) {
         super(container);
-        this.galleryElement = this.container.querySelector('.gallery') as HTMLElement;
+        // Ищем элемент внутри контейнера, а не в document
+        this.galleryElement = this.container;
     }
 
     render(data: GalleryData): HTMLElement {
@@ -18,7 +19,10 @@ export class Gallery extends Component<GalleryData> {
     }
 
     private setItems(items: HTMLElement[]): void {
-        this.galleryElement.innerHTML = '';
-        items.forEach(item => this.galleryElement.appendChild(item));
+        // Проверяем что элемент существует
+        if (this.galleryElement) {
+            this.galleryElement.innerHTML = '';
+            items.forEach(item => this.galleryElement.appendChild(item));
+        }
     }
 }

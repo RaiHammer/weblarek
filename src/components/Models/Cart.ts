@@ -15,22 +15,15 @@ export class Cart extends EventEmitter {
     addItem(item: IProduct): void {
         if (!this.containsItem(item.id)) {
             this.items.push(item);
-            this.emit('cart:item-added', { item });
-            this.emit('cart:changed', { items: this.getItems() });
-            this.emit('cart:total-changed', { total: this.getTotalPrice() });
-            this.emit('cart:count-changed', { count: this.getItemsCount() });
+            this.emit('cart:changed');
         }
     }
 
     removeItem(item: IProduct): void {
         const index = this.items.findIndex((cartItem) => cartItem.id === item.id);
         if (index !== -1) {
-            const removedItem = this.items[index];
             this.items.splice(index, 1);
-            this.emit('cart:item-removed', { item: removedItem });
-            this.emit('cart:changed', { items: this.getItems() });
-            this.emit('cart:total-changed', { total: this.getTotalPrice() });
-            this.emit('cart:count-changed', { count: this.getItemsCount() });
+            this.emit('cart:changed');
         }
     }
 
@@ -43,10 +36,7 @@ export class Cart extends EventEmitter {
 
     clearCart(): void {
         this.items = [];
-        this.emit('cart:cleared', {});
-        this.emit('cart:changed', { items: this.getItems() });
-        this.emit('cart:total-changed', { total: 0 });
-        this.emit('cart:count-changed', { count: 0 });
+        this.emit('cart:changed');
     }
 
     getTotalPrice(): number {

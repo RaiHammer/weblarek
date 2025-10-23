@@ -17,37 +17,25 @@ export class Buyer extends EventEmitter {
         if (data.payment !== undefined && data.payment !== this.payment) {
             this.payment = data.payment;
             changed = true;
-            this.emit('buyer:payment-changed', { payment: data.payment });
         }
 
         if (data.email !== undefined && data.email !== this.email) {
             this.email = data.email;
             changed = true;
-            this.emit('buyer:email-changed', { email: data.email });
         }
 
         if (data.phone !== undefined && data.phone !== this.phone) {
             this.phone = data.phone;
             changed = true;
-            this.emit('buyer:phone-changed', { phone: data.phone });
         }
 
         if (data.address !== undefined && data.address !== this.address) {
             this.address = data.address;
             changed = true;
-            this.emit('buyer:address-changed', { address: data.address });
         }
 
         if (changed) {
-            this.emit('buyer:changed', { data: this.getData() });
-            
-            const validation = this.validate();
-            const isValid = this.isValid(validation);
-            this.emit('buyer:validated', { isValid, errors: validation });
-            
-            if (isValid) {
-                this.emit('buyer:ready', {});
-            }
+            this.emit('buyer:changed', this.getData());
         }
     }
 
@@ -65,10 +53,7 @@ export class Buyer extends EventEmitter {
         this.email = '';
         this.phone = '';
         this.address = '';
-        
-        this.emit('buyer:cleared', {});
-        this.emit('buyer:changed', { data: this.getData() });
-        this.emit('buyer:validated', { isValid: false, errors: this.validate() });
+        this.emit('buyer:cleared');
     }
 
     validate(): ValidationResult {
@@ -109,28 +94,7 @@ export class Buyer extends EventEmitter {
         return digitsOnly.length >= 10;
     }
 
-    private isValid(validationResult: ValidationResult): boolean {
-        return Object.keys(validationResult).length === 0;
-    }
-
-    // Дополнительные методы для удобства
-    setPayment(payment: TPayment): void {
-        this.setData({ payment });
-    }
-
-    setEmail(email: string): void {
-        this.setData({ email });
-    }
-
-    setPhone(phone: string): void {
-        this.setData({ phone });
-    }
-
-    setAddress(address: string): void {
-        this.setData({ address });
-    }
-
     isReady(): boolean {
-        return this.isValid(this.validate());
+        return Object.keys(this.validate()).length === 0;
     }
 }

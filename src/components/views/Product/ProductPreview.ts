@@ -1,11 +1,9 @@
 import { Product } from './Product';
 import { IEvents } from '../../base/Events';
 import { IProduct } from '../../../types/index';
+import { ensureElement } from '../../../utils/utils';
 
-interface ProductPreviewData extends IProduct {
-    buttonText?: string;        // Добавляем для кнопки
-    buttonDisabled?: boolean;   // Добавляем для кнопки
-}
+
 
 export class ProductPreview extends Product {
     protected descriptionElement: HTMLElement;
@@ -14,28 +12,29 @@ export class ProductPreview extends Product {
     constructor(container: HTMLElement, protected events: IEvents) {
         super(container, 'card-preview');
         
-        this.descriptionElement = this.container.querySelector('.card__text') as HTMLElement;
-        this.addToCartButton = this.container.querySelector('.card__button') as HTMLButtonElement;
+        // Находим элементы по существующей разметке
+        const templateElement = this.container.querySelector('.card') as HTMLElement;
+        this.descriptionElement = ensureElement<HTMLElement>('.card__text', templateElement);
+        this.addToCartButton = ensureElement<HTMLButtonElement>('.card__button', templateElement);
+        
         this.attachEventListeners();
     }
 
-    render(data: ProductPreviewData): HTMLElement {
-        // Сохраняем ID в dataset для событий
+    render(data: IProduct): HTMLElement {
         this.container.dataset.id = data.id;
-        
         this.setTitle(data.title);
         this.setPrice(data.price);
         this.setProductImage(data.image, data.title);
-        this.setCategory(data.category); // ТОЛЬКО ОДИН АРГУМЕНТ
+        this.setCategory(data.category);
         this.setDescription(data.description);
-        
-        // Кнопка получает готовые данные от презентера (без логики)
-        if (this.addToCartButton) {
-            this.addToCartButton.textContent = data.buttonText || 'В корзину';
-            this.addToCartButton.disabled = data.buttonDisabled || false;
-        }
-        
         return this.container;
+    }
+
+    setButtonState(text: string, disabled: boolean): void {
+        if (this.addToCartButton) {
+            this.addToCartButton.textContent = text;
+            this.addToCartButton.disabled = disabled;
+        }
     }
 
     private setDescription(description: string): void {
