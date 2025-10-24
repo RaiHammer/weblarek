@@ -1,45 +1,27 @@
-import { Component } from '../base/Component';
-import { IEvents } from '../base/Events';
+import { ensureElement } from "../../utils/utils";
+import { Component } from "../base/Component";
+import { IEvents } from "../base/Events";
 
-interface HeaderData {
-    counter: number;
+interface IHeader {
+  counter: number;
 }
 
-export class Header extends Component<HeaderData> {
-    protected counterElement: HTMLElement;
-    protected basketButton: HTMLButtonElement;
+export class Header extends Component<IHeader> {
+  protected counterElement: HTMLElement;
+  protected cartButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container);
-        
-        this.counterElement = this.container.querySelector('.header__basket-counter') as HTMLElement;
-        this.basketButton = this.container.querySelector('.header__basket') as HTMLButtonElement;
-        
-        if (!this.counterElement) {
-            throw new Error('Counter element not found in header');
-        }
-        
-        if (!this.basketButton) {
-            throw new Error('Basket button not found in header');
-        }
-        
-        this.attachEventListeners();
-    }
+  constructor(protected events: IEvents, container: HTMLElement) {
+    super(container);
 
-    render(data: HeaderData): HTMLElement {
-        this.setCounter(data.counter);
-        return this.container;
-    }
+    this.counterElement = ensureElement<HTMLElement>('.header__basket-counter', this.container);
+    this.cartButton = ensureElement<HTMLButtonElement>('.header__basket', this.container);
 
-    private setCounter(value: number): void {
-        this.counterElement.textContent = String(value);
-        // Скрываем счетчик если 0
-        this.counterElement.style.display = value > 0 ? 'block' : 'none';
-    }
+    this.cartButton.addEventListener('click', () => {
+      this.events.emit('basket:open');
+    })
+  }
 
-    private attachEventListeners(): void {
-        this.basketButton.addEventListener('click', () => {
-            this.events.emit('header:open-cart');
-        });
-    }
+  set counter(value: number) {
+    this.counterElement.textContent = String(value);
+  }
 }

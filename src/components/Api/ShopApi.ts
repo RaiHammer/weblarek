@@ -1,39 +1,28 @@
-// src/components/Api/ShopApi.ts
-import { IApi, IProduct, IOrder, IOrderResult } from "../../types/index";
+import { IApi, IApiProductList, IOrderData } from "../../types/index";
 
 export class ShopApi {
-  private api: IApi;
+  protected api: IApi;
 
   constructor(api: IApi) {
     this.api = api;
   }
 
-  /**
-   * Получает список товаров с сервера
-   * @returns Промис с массивом товаров
-   */
-  async getProductList(): Promise<IProduct[]> {
+  async getProductList(): Promise<IApiProductList> {
     try {
-      const response = await this.api.get("/product/");
-      // Предполагаем, что сервер возвращает объект с полем items
-      return (response as any).items as IProduct[];
+      const response = await this.api.get(`/product/`);
+      return response as IApiProductList;
     } catch (error) {
-      console.error("Ошибка при получении списка товаров:", error);
+      console.error(`Ошибка при получении товаров: ${error}`);
       throw error;
     }
   }
 
-  /**
-   * Отправляет заказ на сервер
-   * @param orderData Данные заказа
-   * @returns Промис с результатом оформления заказа
-   */
-  async submitOrder(orderData: IOrder): Promise<IOrderResult> {
+  async submitOrder(orderData: IOrderData): Promise<object> {
     try {
-      const response = await this.api.post("/order/", orderData);
-      return response as IOrderResult;
+      const response = await this.api.post('/order/', orderData);
+      return response;
     } catch (error) {
-      console.error("Ошибка при отправке заказа:", error);
+      console.error(`Ошибка при подтверждении заказа: ${error}`);
       throw error;
     }
   }

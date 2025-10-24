@@ -1,30 +1,42 @@
-import { Product } from './Product';
-import { IEvents } from '../../base/Events';
-import { IProduct } from '../../../types/index';
+import { CDN_URL, categoryMap } from "../../../utils/constants";
+import { ensureElement } from "../../../utils/utils";
+import { IEvents } from "../../base/Events";
+import { Product, IProduct } from "./Product";
 
+export interface IProductCatalog extends IProduct {
+  id: string;
+  category: string;
+  image: string;
+}
 
+export class ProductCard extends Product<IProductCatalog> {
+  protected id: string;
+  protected cardCategory: HTMLSpanElement;
+  protected cardImage: HTMLImageElement;
 
+  constructor(events: IEvents, container: HTMLElement) {
+    super(container, categoryMap);
+    this.id = '';
+    this.cardCategory = ensureElement<HTMLSpanElement>('.card__category', this.container);
+    this.cardImage = ensureElement<HTMLImageElement>('.card__image', this.container);
 
+    this.container.addEventListener('click', () => {
+      events.emit('catalog:select', { id: this.id });
+    });
+  }
 
-export class ProductCard extends Product {
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container, 'card-catalog');
-        this.attachEventListeners();
-    }
+  setId(value: string) {
+    this.id = value;
+  }
 
-    render(data: IProduct): HTMLElement {
-        this.container.dataset.id = data.id;
-        this.setTitle(data.title);
-        this.setPrice(data.price);
-        this.setProductImage(data.image, data.title);
-        this.setCategory(data.category);
-        return this.container;
-    }
+  set category(value: string) {
+    this.cardCategory.textContent = value;
+    Object.values(this.categoryMap).forEach(cls => this.cardCategory.classList.remove(cls));
+    const modifier = this.categoryMap[value];
+    if (modifier) this.cardCategory.classList.add(modifier);
+  }
 
-    private attachEventListeners(): void {
-        // Вся карточка - это кнопка, вешаем обработчик на контейнер
-        this.container.addEventListener('click', () => {
-            this.events.emit('card:select', { id: this.container.dataset.id });
-        });
-    }
+  set image(src: string) {
+    this.setImage(this.cardImage, `${CDN_URL}${src.slice(0, -3) + 'png'}`, this.cardTitle.textContent || 'Изображение товара');
+  }
 }

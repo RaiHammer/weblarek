@@ -1,53 +1,61 @@
-import { Product } from './Product';
-import { IEvents } from '../../base/Events';
-import { IProduct } from '../../../types/index';
-import { ensureElement } from '../../../utils/utils';
+import { CDN_URL, categoryMap } from "../../../utils/constants";
+import { ensureElement } from "../../../utils/utils";
+import { IEvents } from "../../base/Events";
+import { Product, IProduct } from "./Product";
 
+export interface IProductDetailed extends IProduct {
+  id: string;
+  category: string;
+  image: string;
+  description: string;
+  addButtonText: string;
+  addButtonDisabled: boolean;
+}
 
+export class ProductPreview extends Product<IProductDetailed> {
+  protected id: string;
+  protected cardCategory: HTMLSpanElement;
+  protected cardImage: HTMLImageElement;
+  protected descElement: HTMLParagraphElement;
+  protected addButton: HTMLButtonElement;
 
-export class ProductPreview extends Product {
-    protected descriptionElement: HTMLElement;
-    protected addToCartButton: HTMLButtonElement;
+  constructor(events: IEvents, container: HTMLElement) {
+    super(container, categoryMap);
+    this.id = '';
+    this.cardCategory = ensureElement<HTMLSpanElement>('.card__category', this.container);
+    this.cardImage = ensureElement<HTMLImageElement>('.card__image', this.container);
+    this.descElement = ensureElement<HTMLParagraphElement>('.card__text', this.container);
+    this.addButton = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container, 'card-preview');
-        
-        // Находим элементы по существующей разметке
-        const templateElement = this.container.querySelector('.card') as HTMLElement;
-        this.descriptionElement = ensureElement<HTMLElement>('.card__text', templateElement);
-        this.addToCartButton = ensureElement<HTMLButtonElement>('.card__button', templateElement);
-        
-        this.attachEventListeners();
-    }
+    this.addButton.addEventListener('click', () => {
+      events.emit('basket:addCard', { id: this.id });
+    });
+  }
 
-    render(data: IProduct): HTMLElement {
-        this.container.dataset.id = data.id;
-        this.setTitle(data.title);
-        this.setPrice(data.price);
-        this.setProductImage(data.image, data.title);
-        this.setCategory(data.category);
-        this.setDescription(data.description);
-        return this.container;
-    }
+  setId(value: string) {
+    this.id = value;
+  }
 
-    setButtonState(text: string, disabled: boolean): void {
-        if (this.addToCartButton) {
-            this.addToCartButton.textContent = text;
-            this.addToCartButton.disabled = disabled;
-        }
-    }
+  set category(value: string) {
+    this.cardCategory.textContent = value;
+    Object.values(this.categoryMap).forEach(cls => this.cardCategory.classList.remove(cls));
+    const modifier = this.categoryMap[value];
+    if (modifier) this.cardCategory.classList.add(modifier);
+  }
 
-    private setDescription(description: string): void {
-        if (this.descriptionElement) {
-            this.descriptionElement.textContent = description;
-        }
-    }
+  set image(src: string) {
+    this.setImage(this.cardImage, `${CDN_URL}${src.slice(0, -3) + 'png'}`, this.cardTitle.textContent || 'Изображение товара');
+  }
 
-    private attachEventListeners(): void {
-        if (this.addToCartButton) {
-            this.addToCartButton.addEventListener('click', () => {
-                this.events.emit('preview:add-to-cart', { id: this.container.dataset.id });
-            });
-        }
-    }
+  set description(value: string) {
+    this.descElement.textContent = value;
+  }
+
+  set addButtonText(value: string) {
+    this.addButton.textContent = value;
+  }
+
+  set addButtonDisabled(value: boolean) {
+    this.addButton.disabled = value;
+  }
 }

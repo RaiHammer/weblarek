@@ -1,53 +1,52 @@
-import { Component } from '../base/Component';
-import { IEvents } from '../base/Events';
+import { ensureElement } from "../../utils/utils";
+import { Component } from "../base/Component";
+import { IEvents } from "../base/Events";
 
-interface BasketData {
-    items: HTMLElement[];
-    total: number;
+export interface IBasket {
+  totalPrice: number;
+  items: HTMLElement[];
 }
 
-export class Basket extends Component<BasketData> {
-    protected itemsList: HTMLElement;
-    protected totalElement: HTMLElement;
-    protected buttonElement: HTMLButtonElement;
+export class Basket extends Component<IBasket> {
+  protected basketItemsList: HTMLUListElement;
+  protected priceElement: HTMLSpanElement;
+  protected confirmButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container);
-        this.itemsList = this.container.querySelector('.basket__list') as HTMLElement;
-        this.totalElement = this.container.querySelector('.basket__price') as HTMLElement;
-        this.buttonElement = this.container.querySelector('.basket__button') as HTMLButtonElement;
-        this.attachEventListeners();
+  constructor(protected events: IEvents, container: HTMLElement) {
+    super(container);
+
+    this.basketItemsList = ensureElement<HTMLUListElement>('.basket__list', this.container);
+    this.priceElement = ensureElement<HTMLSpanElement>('.basket__price', this.container);
+    this.confirmButton = ensureElement<HTMLButtonElement>('.basket__button', this.container);
+    this.confirmButton.addEventListener('click', () => {
+      this.events.emit('basket:confirm');
+    });
+  }
+
+  set totalPrice(value: number) {
+    this.priceElement.textContent = `${value} синапсов`;
+  }
+
+  set confirmButtonDisabled(disabled: boolean) {
+    this.confirmButton.disabled = disabled;
+  }
+
+  set items(items: HTMLElement[]) {
+    console.log('Setting basketItems:', items);
+    this.basketItemsList.innerHTML = '';
+    if (items.length === 0) {
+      const emptyText = document.createElement('p');
+      emptyText.textContent = 'Корзина пуста';
+      emptyText.style.opacity = '.3';
+      this.basketItemsList.appendChild(emptyText);
+      this.confirmButtonDisabled = true;
+      this.totalPrice = 0;
+      return;
     }
 
-    render(data: BasketData): HTMLElement {
-        this.setItems(data.items);
-        this.setTotal(data.total);
-        return this.container;
-    }
-
-    setButtonState(text: string, disabled: boolean): void {
-        if (this.buttonElement) {
-            this.buttonElement.textContent = text;
-            this.buttonElement.disabled = disabled;
-        }
-    }
-
-    private setItems(items: HTMLElement[]): void {
-        this.itemsList.innerHTML = '';
-        items.forEach(item => this.itemsList.appendChild(item));
-    }
-
-    private setTotal(total: number): void {
-        if (this.totalElement) {
-            this.totalElement.textContent = `${total} синапсов`;
-        }
-    }
-
-    private attachEventListeners(): void {
-        if (this.buttonElement) {
-            this.buttonElement.addEventListener('click', () => {
-                this.events.emit('basket:checkout');
-            });
-        }
-    }
+    this.confirmButtonDisabled = false;
+    items.forEach(item => {
+      this.basketItemsList.appendChild(item);
+    });
+  }
 }

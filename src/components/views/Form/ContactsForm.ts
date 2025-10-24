@@ -1,39 +1,28 @@
-import { Form } from './Form';
-import { IEvents } from '../../base/Events';
+import { ensureElement } from "../../../utils/utils";
+import { IEvents } from "../../base/Events";
+import { Form, IForm } from "./Form";
 
-
-interface ContactsFormData {
-    email: string;
-    phone: string;
+interface IContactsForm extends IForm {
+  email?: string;
+  phone?: string;
 }
 
-export class ContactsForm extends Form<ContactsFormData> {
-    protected emailInput: HTMLInputElement;
-    protected phoneInput: HTMLInputElement;
+export class ContactsForm extends Form<IContactsForm> {
+  protected emailInput: HTMLInputElement;
+  protected phoneInput: HTMLInputElement;
 
-    constructor(container: HTMLElement, events: IEvents) {
-        super(container, events, 'contacts');
-        this.emailInput = this.formElement.querySelector('input[name="email"]') as HTMLInputElement;
-        this.phoneInput = this.formElement.querySelector('input[name="phone"]') as HTMLInputElement;
-    }
+  constructor(events: IEvents, container: HTMLElement) {
+    super(events, container);
 
-    render(data: ContactsFormData): HTMLElement {
-        this.setEmail(data.email);
-        this.setPhone(data.phone);
-        return this.container;
-    }
+    this.emailInput = ensureElement<HTMLInputElement>('input[name="email"]', container);
+    this.phoneInput = ensureElement<HTMLInputElement>('input[name="phone"]', container);
+  }
 
-    setEmail(email: string): void {
-        this.emailInput.value = email;
-    }
+  set email(value: string) {
+    this.emailInput.value = value;
+  }
 
-    setPhone(phone: string): void {
-        this.phoneInput.value = phone;
-    }
-
-    setSubmitButtonState(disabled: boolean): void {
-        if (this.submitButton) {
-            this.submitButton.disabled = disabled;
-        }
-    }
+  set phone(value: string) {
+    this.phoneInput.value = value;
+  }
 }

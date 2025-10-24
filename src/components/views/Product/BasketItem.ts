@@ -1,50 +1,33 @@
-import { Product } from './Product';
-import { IEvents } from '../../base/Events';
-import { IProduct } from '../../../types/index';
-import { ensureElement } from '../../../utils/utils';
+import { ensureElement } from "../../../utils/utils";
+import { IEvents } from "../../base/Events";
+import { Product, IProduct } from "./Product";
 
-
-
-
-interface BasketItemData extends IProduct {
-    index: number;
+export interface IProductInBasket extends IProduct {
+  id: string;
+  index?: number;
 }
 
-export class BasketItem extends Product {
-    protected indexElement: HTMLElement;
-    protected deleteButton: HTMLButtonElement;
+export class BasketItem extends Product<IProductInBasket> {
+  protected id: string;
+  protected indexElement: HTMLSpanElement;
+  protected deleteButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container, 'card-basket');
-        
-        // Находим элементы по существующей разметке
-        const templateElement = this.container.querySelector('.card') as HTMLElement;
-        this.indexElement = ensureElement<HTMLElement>('.basket__item-index', templateElement);
-        this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', templateElement);
-        
-        this.attachEventListeners();
-    }
+  constructor(events: IEvents, container: HTMLElement) {
+    super(container, {});
+    this.id = '';
+    this.indexElement = ensureElement<HTMLSpanElement>('.basket__item-index', this.container);
+    this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
-    render(data: BasketItemData): HTMLElement {
-        this.container.dataset.id = data.id;
-        this.setTitle(data.title);
-        this.setPrice(data.price);
-        this.setIndex(data.index);
-        return this.container;
-    }
+    this.deleteButton.addEventListener('click', () => {
+      events.emit('basket:deleteCard', { id: this.id });
+    });
+  }
 
-    private setIndex(index: number): void {
-        if (this.indexElement) {
-            this.indexElement.textContent = String(index);
-        }
-    }
+  setId(value: string) {
+    this.id = value;
+  }
 
-    private attachEventListeners(): void {
-        if (this.deleteButton) {
-            this.deleteButton.addEventListener('click', (event) => {
-                event.preventDefault();
-                this.events.emit('basket:remove', { id: this.container.dataset.id });
-            });
-        }
-    }
+  set index(value: number) {
+    this.indexElement.textContent = String(value);
+  }
 }

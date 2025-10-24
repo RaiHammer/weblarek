@@ -1,35 +1,29 @@
-import { Component } from '../../base/Component';
-import { IEvents } from '../../base/Events';
+import { ensureElement } from "../../../utils/utils";
+import { Component } from "../../base/Component";
+import { IEvents } from "../../base/Events";
 
-interface ModalSuccessData {
-    total: number;
+interface ISuccess {
+  total: number;
 }
 
-export class ModalSuccess extends Component<ModalSuccessData> {
-    protected descriptionElement: HTMLElement;
-    protected closeButton: HTMLButtonElement;
+export class ModalSuccess extends Component<ISuccess> {
+  protected title: HTMLHeadingElement;
+  protected desc: HTMLParagraphElement;
+  protected closeButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container);
-        
-        this.descriptionElement = this.container.querySelector('.order-success__description') as HTMLElement;
-        this.closeButton = this.container.querySelector('.order-success__close') as HTMLButtonElement;
-        
-        this.attachEventListeners();
-    }
+  constructor(protected events: IEvents, container: HTMLElement) {
+    super(container);
 
-    render(data: ModalSuccessData): HTMLElement {
-        this.setTotal(data.total);
-        return this.container;
-    }
+    this.title = ensureElement<HTMLHeadingElement>('.order-success__title', this.container);
+    this.desc = ensureElement<HTMLParagraphElement>('.order-success__description', this.container);
+    this.closeButton = ensureElement<HTMLButtonElement>('.order-success__close', this.container);
 
-    private setTotal(total: number): void {
-        this.descriptionElement.textContent = `Списано ${total} синапсов`;
-    }
+    this.closeButton.addEventListener('click', () => {
+      this.events.emit('success:confirm');
+    })
+  }
 
-    private attachEventListeners(): void {
-        this.closeButton.addEventListener('click', () => {
-            this.events.emit('success:close');
-        });
-    }
+  set total(value: number) {
+    this.desc.textContent = `Списано ${value} синапсов`;
+  }
 }

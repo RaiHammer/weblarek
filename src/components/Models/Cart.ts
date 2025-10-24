@@ -1,67 +1,64 @@
-import { EventEmitter } from '../base/Events';
-import { IProduct } from '../../types/index';
+import { IProduct } from "../../types";
+import { IEvents } from "../base/Events";
 
-export class Cart extends EventEmitter {
-    private items: IProduct[] = [];
+export class Cart {
+  protected cartItems: IProduct[];
 
-    constructor() {
-        super();
-    }
+  constructor(protected events: IEvents, productsInCart: IProduct[] = []) {
+    this.cartItems = productsInCart;
+  }
 
-    getItems(): IProduct[] {
-        return [...this.items];
-    }
+  getCartItems(): IProduct[] {
+    return this.cartItems;
+  }
 
-    addItem(item: IProduct): void {
-        if (!this.containsItem(item.id)) {
-            this.items.push(item);
-            this.emit('cart:changed');
-        }
-    }
+  addProductInCart(newProduct: IProduct): void {
+    this.cartItems.push(newProduct);
 
-    removeItem(item: IProduct): void {
-        const index = this.items.findIndex((cartItem) => cartItem.id === item.id);
-        if (index !== -1) {
-            this.items.splice(index, 1);
-            this.emit('cart:changed');
-        }
-    }
+    this.events.emit('cart:updated', {
+      items: this.cartItems,
+      total: this.getCartItemsPrice(),
+      count: this.getCartItemsCount()
+    })
+  }
 
-    removeItemById(itemId: string): void {
-        const item = this.items.find(item => item.id === itemId);
-        if (item) {
-            this.removeItem(item);
-        }
-    }
+  removeProductFromCart(removableProductId: string): void {
+    this.cartItems = this.cartItems.filter(product => product.id !== removableProductId);
 
-    clearCart(): void {
-        this.items = [];
-        this.emit('cart:changed');
-    }
+    this.events.emit('cart:updated', {
+      items: this.cartItems,
+      total: this.getCartItemsPrice(),
+      count: this.getCartItemsCount()
+    })
+  }
 
-    getTotalPrice(): number {
-        return this.items.reduce((total, item) => {
-            return total + (item.price || 0);
-        }, 0);
-    }
+  clearCart(): void {
+    this.cartItems = [];
 
-    getItemsCount(): number {
-        return this.items.length;
-    }
+    this.events.emit('cart:updated', {
+      items: this.cartItems,
+      total: this.getCartItemsPrice(),
+      count: this.getCartItemsCount()
+    })
+  }
 
-    containsItem(id: string): boolean {
-        return this.items.some((item) => item.id === id);
-    }
+  getCartItemsPrice(): number {
+    let sum: number = 0;
 
-    isEmpty(): boolean {
-        return this.items.length === 0;
-    }
+    this.cartItems.forEach(product => {
+      if (product.price !== null) {
+        sum += product.price;
+      }
+    })
 
-    getItemIds(): string[] {
-        return this.items.map(item => item.id);
-    }
+    return sum;
+  }
 
-    canCheckout(): boolean {
-        return !this.isEmpty() && this.items.every(item => item.price !== null);
-    }
+  getCartItemsCount(): number {
+    return this.cartItems.length;
+  }
+
+  checkItemInCartById(id: string): boolean {
+    return this.cartItems.some(product => product.id === id);
+  }
 }

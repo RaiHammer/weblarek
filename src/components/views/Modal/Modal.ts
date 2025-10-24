@@ -1,70 +1,36 @@
-import { Component } from '../../base/Component';
-import { IEvents } from '../../base/Events';
+import { ensureElement } from "../../../utils/utils";
+import { Component } from "../../base/Component";
+import { IEvents } from "../../base/Events";
 
-interface ModalData {
-    content: HTMLElement;
+interface IContent {
+  content: HTMLElement;
+  isOpen: boolean;
 }
 
-export class Modal extends Component<ModalData> {
-    protected closeButton: HTMLButtonElement;
-    protected contentElement: HTMLElement;
+export class Modal extends Component<IContent> {
+  protected modalContent: HTMLElement;
+  protected closeButton: HTMLButtonElement;
 
-    constructor(container: HTMLElement, protected events: IEvents) {
-        super(container);
-        
-        this.closeButton = this.container.querySelector('.modal__close') as HTMLButtonElement;
-        this.contentElement = this.container.querySelector('.modal__content') as HTMLElement;
-        
-        if (!this.closeButton) {
-            throw new Error('Close button not found in modal');
-        }
-        
-        if (!this.contentElement) {
-            throw new Error('Content element not found in modal');
-        }
-        
-        this.attachEventListeners();
-    }
+  constructor(protected events: IEvents, container: HTMLElement) {
+    super(container);
+    this.modalContent = ensureElement('.modal__content', this.container);
+    this.closeButton = ensureElement('.modal__close', this.container) as HTMLButtonElement;
 
-    render(data: ModalData): HTMLElement {
-        this.setContent(data.content);
-        return this.container;
-    }
-
-    setContent(content: HTMLElement): void {
-        this.contentElement.innerHTML = '';
-        this.contentElement.appendChild(content);
-    }
-
-    open(): void {
-        this.container.classList.add('modal_active');
-        document.body.style.overflow = 'hidden';
-        this.events.emit('modal:open');
-    }
-
-    close(): void {
-        this.container.classList.remove('modal_active');
-        document.body.style.overflow = '';
+    this.closeButton.addEventListener('click', () => {
+      this.events.emit('modal:close');
+    });
+    this.container.addEventListener('click', (e: MouseEvent) => {
+      if (e.target === this.container) {
         this.events.emit('modal:close');
-    }
+      }
+    });
+  }
 
-    private attachEventListeners(): void {
-        this.closeButton.addEventListener('click', () => this.close());
-        
-        // Клик по затемненной области (самому контейнеру модалки)
-        this.container.addEventListener('click', (event) => {
-            if (event.target === this.container) {
-                this.close();
-            }
-        });
-        
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape') this.close();
-        });
+  set content(content: HTMLElement) {
+    this.modalContent.replaceChildren(content);
+  }
 
-        // Предотвращаем закрытие при клике на контент
-        this.contentElement.addEventListener('click', (event) => {
-            event.stopPropagation();
-        });
-    }
+  set isOpen(value: boolean) {
+    this.container.classList.toggle('modal_active', value);
+  }
 }

@@ -1,21 +1,8 @@
-export type ApiPostMethods = "POST" | "PUT" | "DELETE";
-
-export type ApiListResponse<Type> = {
-  total: number;
-  items: Type[];
-};
-
-export type TPayment = "online" | "upon receipt";
-
-export type EventName = string | RegExp;
+export type ApiPostMethods = 'POST' | 'PUT' | 'DELETE';
 
 export interface IApi {
-  get<T extends object>(uri: string): Promise<T>;
-  post<T extends object>(
-    uri: string,
-    data: object,
-    method?: ApiPostMethods
-  ): Promise<T>;
+    get<T extends object>(uri: string): Promise<T>;
+    post<T extends object>(uri: string, data: object, method?: ApiPostMethods): Promise<T>;
 }
 
 export interface IProduct {
@@ -27,14 +14,21 @@ export interface IProduct {
   price: number | null;
 }
 
-export interface IBuyer {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
+export interface IApiProductList {
+  total: number,
+  items: IProduct[]
 }
 
-export interface IOrder {
+export type TPayment = 'card' | 'cash';
+
+export interface IBuyer {
+    payment: TPayment;
+    email: string;
+    phone: string;
+    address: string;
+}
+
+export interface IOrderData {
   payment: TPayment;
   email: string;
   phone: string;
@@ -43,14 +37,4 @@ export interface IOrder {
   items: string[];
 }
 
-export interface IOrderResult {
-  id: string;
-  total: number;
-}
-
-export type ValidationResult = {
-  payment?: string;
-  email?: string;
-  phone?: string;
-  address?: string;
-};
+export type TByuerFields = 'payment' | 'email' | 'phone' | 'address';

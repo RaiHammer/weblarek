@@ -1,28 +1,20 @@
-import { Component } from '../base/Component';
+import { Component } from "../base/Component";
+import { IEvents } from "../base/Events";
 
-interface GalleryData {
-    items: HTMLElement[];
+interface IGallery {
+  catalog: HTMLElement[];
 }
 
-export class Gallery extends Component<GalleryData> {
-    protected galleryElement: HTMLElement;
+export class Gallery extends Component<IGallery> {
+  protected catalogElement: HTMLElement;
 
-    constructor(container: HTMLElement) {
-        super(container);
-        // Ищем элемент внутри контейнера, а не в document
-        this.galleryElement = this.container;
-    }
+  constructor(protected events: IEvents, container: HTMLElement) {
+    super(container);
+    this.catalogElement = container;
+  }
 
-    render(data: GalleryData): HTMLElement {
-        this.setItems(data.items);
-        return this.container;
-    }
-
-    private setItems(items: HTMLElement[]): void {
-        // Проверяем что элемент существует
-        if (this.galleryElement) {
-            this.galleryElement.innerHTML = '';
-            items.forEach(item => this.galleryElement.appendChild(item));
-        }
-    }
+  set catalog(items: HTMLElement[]) {
+    this.catalogElement.innerHTML = '';
+    items.forEach(item => this.catalogElement.appendChild(item));
+  }
 }

@@ -1,37 +1,46 @@
-import { EventEmitter } from '../base/Events';
-import { IProduct } from '../../types/index';
+import { IProduct } from "../../types";
+import { IEvents } from "../base/Events";
 
-export class ProductList extends EventEmitter {
-    private products: IProduct[] = [];
-    private selectedProduct: IProduct | null = null;
+export class ProductList {
+  protected products: IProduct[];
+  protected detailedProduct: IProduct | null;
 
-    constructor() {
-        super();
+  constructor(protected events: IEvents, ProductList: IProduct[] = []) {
+    this.products = ProductList;
+    this.detailedProduct = null;
+  }
+
+  setProductList(ProductList: IProduct[]): void {
+    this.products = ProductList;
+
+    this.events.emit('catalog:updated', { products: this.products });
+  }
+
+  getProductList(): IProduct[] {
+    return this.products;
+  }
+
+  getProductById(id: string): IProduct | undefined {
+    const foundProduct = this.products.find(product => product.id === id);
+
+    if (foundProduct) {
+      return foundProduct;
+    } else {
+      return undefined;
     }
+  }
 
-    setProducts(products: IProduct[]): void {
-        this.products = [...products];
-        this.emit('productlist:changed');
-    }
+  setDetailedProduct(detailedProduct: IProduct): void {
+    this.detailedProduct = detailedProduct;
 
-    getProducts(): IProduct[] {
-        return [...this.products];
-    }
+    this.events.emit('catalog:detailedUpdated', { detailedProduct: this.detailedProduct })
+  }
 
-    getProductById(id: string): IProduct | undefined {
-        return this.products.find((product) => product.id === id);
+  getDetailedProduct(): IProduct | null {
+    if (this.detailedProduct) {
+      return this.detailedProduct;
+    } else {
+      return null;
     }
-
-    setSelectedProduct(product: IProduct): void {
-        this.selectedProduct = product;
-        this.emit('productlist:selected');
-    }
-
-    getSelectedProduct(): IProduct | null {
-        return this.selectedProduct;
-    }
-
-    clearSelectedProduct(): void {
-        this.selectedProduct = null;
-    }
+  }
 }

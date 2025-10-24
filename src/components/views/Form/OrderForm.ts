@@ -1,55 +1,40 @@
-import { Form } from './Form';
-import { IEvents } from '../../base/Events';
-import { TPayment } from '../../../types/index';
+import { TPayment } from "../../../types";
+import { ensureElement } from "../../../utils/utils";
+import { IEvents } from "../../base/Events";
+import { Form, IForm } from "./Form";
 
-
-interface OrderFormData {
-    payment: TPayment;
-    address: string;
+interface IOrderForm extends IForm {
+  payment?: TPayment;
+  address?: string;
 }
 
-export class OrderForm extends Form<OrderFormData> {
-    protected paymentButtons: NodeListOf<HTMLButtonElement>;
-    protected addressInput: HTMLInputElement;
+export class OrderForm extends Form<IOrderForm> {
+  protected paymentButtons: HTMLButtonElement[];
+  protected addressInput: HTMLInputElement;
 
-    constructor(container: HTMLElement, events: IEvents) {
-        super(container, events, 'order');
-        this.paymentButtons = this.formElement.querySelectorAll('.button_alt') as NodeListOf<HTMLButtonElement>;
-        this.addressInput = this.formElement.querySelector('input[name="address"]') as HTMLInputElement;
-        this.attachPaymentListeners();
-    }
+  constructor(events: IEvents, container: HTMLElement) {
+    super(events, container);
 
-    render(data: OrderFormData): HTMLElement {
-        this.setPaymentMethod(data.payment);
-        this.setAddress(data.address);
-        return this.container;
-    }
+    this.paymentButtons = [
+      ensureElement<HTMLButtonElement>('button[name="card"]', this.container),
+      ensureElement<HTMLButtonElement>('button[name="cash"]', this.container),
+    ];
+    this.addressInput = ensureElement<HTMLInputElement>('input[name="address"]', this.container);
 
-    setPaymentMethod(method: TPayment): void {
-        this.paymentButtons.forEach(button => {
-            const paymentType = button.name === 'card' ? 'online' : 'upon receipt';
-            const isActive = paymentType === method;
-            button.classList.toggle('button_alt-active', isActive);
-        });
-    }
+    this.paymentButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        this.events.emit('order:paymentChange', { payment: button.name as TPayment });
+      });
+    });
+  }
 
-    setAddress(address: string): void {
-        this.addressInput.value = address;
-    }
+  set payment(value: TPayment) {
+    this.paymentButtons.forEach(button => {
+      button.classList.toggle('button_alt-active', button.name === value);
+    });
+  }
 
-    setSubmitButtonState(disabled: boolean): void {
-        if (this.submitButton) {
-            this.submitButton.disabled = disabled;
-        }
-    }
-
-    private attachPaymentListeners(): void {
-        this.paymentButtons.forEach(button => {
-            button.addEventListener('click', (event) => {
-                event.preventDefault();
-                const paymentMethod: TPayment = button.name === 'card' ? 'online' : 'upon receipt';
-                this.events.emit('payment:change', { payment: paymentMethod });
-            });
-        });
-    }
+  set address(value: string) {
+    this.addressInput.value = value;
+  }
 }
