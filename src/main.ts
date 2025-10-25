@@ -17,7 +17,7 @@ import './scss/styles.scss';
 import { ShopApi } from './components/Api/ShopApi';
 import { IApiProductList, IBuyer, IOrderData, IProduct, TByuerFields, TPayment } from './types';
 import { API_URL } from './utils/constants';
-import { cloneTemplate } from './utils/utils';
+import { cloneTemplate, ensureElement } from './utils/utils';
 
 const baseApi = new Api(API_URL);
 const shopApi = new ShopApi(baseApi);
@@ -27,13 +27,13 @@ const catalog = new ProductList(events);
 const cart = new Cart(events);
 const buyer = new Buyer(events);
 
-const galleryElement = document.querySelector('.gallery') as HTMLElement;
+const galleryElement = ensureElement<HTMLElement>('.gallery');
 const gallery = new Gallery(events, galleryElement);
 
-const modalElement = document.querySelector('#modal-container') as HTMLElement;
+const modalElement = ensureElement<HTMLElement>('#modal-container');
 const modal = new Modal(events, modalElement);
 
-const headerElement = document.querySelector('.header') as HTMLElement;
+const headerElement = ensureElement<HTMLElement>('.header');
 const header = new Header(events, headerElement);
 
 const basketTemplate = cloneTemplate<HTMLElement>('#basket');
@@ -87,20 +87,9 @@ events.on('basket:open', () => {
 
 events.on('basket:addCard', (data: { id: string }) => {
   const item = catalog.getProductById(data.id);
-  if (!item) {
-    console.error('Продукт не найден по id:', data.id);
-    return;
-  }
-  if (item.price === null) {
-    return;
-  }
-  const isInBasket = cart.checkItemInCartById(data.id);
-  if (isInBasket) {
-    cart.removeProductFromCart(data.id);
-  } else {
+  if (item && item.price !== null) {
     cart.addProductInCart(item);
   }
-  modal.isOpen = false;
 });
 
 events.on('basket:deleteCard', (data: { id: string }) => {
@@ -176,4 +165,7 @@ shopApi.getProductList()
       throw new Error('API вернул некорректные данные');
     }
     catalog.setProductList(response.items);
+  })
+  .catch((error) => {
+    console.error('Ошибка при загрузке товаров:', error);
   });

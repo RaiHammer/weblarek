@@ -28,13 +28,9 @@ export interface IBuyer {
     address: string;
 }
 
-export interface IOrderData {
-  payment: TPayment;
-  email: string;
-  phone: string;
-  address: string;
-  total: number;
-  items: string[];
+export interface IOrderData extends IBuyer {
+     total: number,
+     items: string[]
 }
 
 export type TByuerFields = 'payment' | 'email' | 'phone' | 'address';

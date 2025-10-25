@@ -27,8 +27,14 @@ export class ProductPreview extends Product<IProductDetailed> {
     this.descElement = ensureElement<HTMLParagraphElement>('.card__text', this.container);
     this.addButton = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
-    this.addButton.addEventListener('click', () => {
+    this.addButton.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation(); // Предотвращаем всплытие события
       events.emit('basket:addCard', { id: this.id });
+    });
+
+    // Также предотвращаем всплытие для всего контейнера карточки
+    this.container.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation();
     });
   }
 
